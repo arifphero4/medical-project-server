@@ -51,6 +51,33 @@ async function run() {
       const result = await bookingsCollection.insertOne(booking);
       return res.send({ success: true, result });
     });
+
+    app.get("/available", async (req, res) => {
+      const date = req.query.date;
+
+      // step 1: get all services
+      const services = await serviceCollection.find().toArray();
+
+      //step 2: get the booking of that day
+      const query = { date: date };
+      const bookings = await bookingCollection.find(query).toArray();
+
+      //step 3: for each service
+      services.forEach((service) => {
+        //step 4: find bookings for that service
+        const serviceBookings = bookings.filter(
+          (book) => book.treatment === service.name
+        );
+        //step 5: select slots for the service booking: [ '', '', '', '']
+        const bookedSlots = serviceBookings.map((book) => book.slot);
+        //step 6: select those slots that are not in bookedSlot
+        const available = service.slots.filter(
+          (slot) => !bookedSlots.includes(slot)
+        );
+        //step 7: set available to slots to make it easier
+        service.slots = available;
+      });
+    });
   } finally {
     // await client.close();
   }
