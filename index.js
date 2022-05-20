@@ -11,7 +11,6 @@ app.use(cors());
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.fc5j3.mongodb.net/?retryWrites=true&w=majority`;
-console.log(uri);
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -21,17 +20,17 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
-    const servicesCollection = client
+    const serviceCollection = client
       .db("doctors_portal")
       .collection("services");
-    const bookingsCollection = client
+    const bookingCollection = client
       .db("doctors_portal")
       .collection("bookings");
 
     // http://localhost:5000/service
     app.get("/service", async (req, res) => {
       const query = {};
-      const cursor = servicesCollection.find(query);
+      const cursor = serviceCollection.find(query);
       const services = await cursor.toArray();
       res.send(services);
     });
@@ -44,14 +43,15 @@ async function run() {
         date: booking.date,
         patient: booking.patient,
       };
-      const exists = await bookingsCollection.findOne(query);
+      const exists = await bookingCollection.findOne(query);
       if (exists) {
         return res.send({ success: false, booking: exists });
       }
-      const result = await bookingsCollection.insertOne(booking);
+      const result = await bookingCollection.insertOne(booking);
       return res.send({ success: true, result });
     });
 
+    // http://localhost:5000/available
     app.get("/available", async (req, res) => {
       const date = req.query.date;
 
@@ -77,6 +77,7 @@ async function run() {
         //step 7: set available to slots to make it easier
         service.slots = available;
       });
+      res.send(services);
     });
   } finally {
     // await client.close();
